@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мектеп Тәрбие Жұмысы Порталы</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Авторизация модальды терезесі -->
+    <div id="authModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 space-y-6">
+            <div class="text-center">
+                <div class="bg-indigo-100 text-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900">Мектеп Тәрбие Порталы</h2>
+                <p class="text-slate-500 text-sm mt-1">Жүйеге кіру үшін рөлді таңдаңыз</p>
+            </div>
+
+            <div class="space-y-4">
+                <button onclick="loginAsAdmin()" class="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-4 rounded-xl transition shadow-sm">
+                    <i class="fa-brands fa-google text-red-500 text-lg"></i>
+                    Администратор ретінде кіру (Google)
+                </button>
+                
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink mx-4 text-slate-400 text-xs uppercase">Немесе сынып жетекші</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Бір реттік кіру коды</label>
+                        <input type="text" id="teacherCodeInput" placeholder="Мысалы: TCH-9921" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-mono uppercase">
+                    </div>
+                    <button onclick="loginAsTeacher()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition shadow-md shadow-indigo-200">
+                        Сынып жетекші ретінде кіру
+                    </button>
+                </div>
+            </div>
+            <div class="text-center text-xs text-slate-400">
+                Қолжетімді кодтар: TCH-9921, TCH-4412 (немесе жаңадан қосылғандар)
+            </div>
+        </div>
+    </div>
+
+    <!-- Негізгі қосымша контейнері -->
+    <div id="appContainer" class="flex-1 flex flex-col hidden">
+        <!-- Жоғарғы навигация -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md">
+                    <i class="fa-solid fa-school text-lg"></i>
+                </div>
+                <div>
+                    <h1 id="institutionTitle" class="font-bold text-slate-900 text-lg">№1 Жалпы орта білім беретін мектеп</h1>
+                    <p class="text-xs text-slate-500" id="userRoleIndicator">Рөл: Администратор</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="logout()" class="text-slate-500 hover:text-red-600 text-sm font-medium transition flex items-center gap-2 bg-slate-100 hover:bg-red-50 px-3 py-2 rounded-lg">
+                    <i class="fa-solid fa-right-from-bracket"></i> Шығу
+                </button>
+            </div>
+        </header>
+
+        <!-- Орталық мазмұн және сайдбар -->
+        <div class="flex-1 flex flex-col md:flex-row">
+            <!-- Сайдбар (Бөлімдер тізімі) -->
+            <aside class="w-full md:w-72 bg-white border-r border-slate-200 p-4 space-y-1 overflow-y-auto">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Негізгі бөлімдер</p>
+                <button onclick="switchTab('orders')" id="btn-orders" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition bg-indigo-50 text-indigo-700">
+                    <i class="fa-solid fa-file-shield w-5"></i> Тәрбие бұйрықтары
+                </button>
+                <button onclick="switchTab('folder')" id="btn-folder" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-folder-open w-5"></i> Сынып папкасы
+                </button>
+                <button onclick="switchTab('parents')" id="btn-parents" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-users w-5"></i> Ата-аналармен жұмыс
+                </button>
+                <button onclick="switchTab('docs')" id="btn-docs" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-book-bookmark w-5"></i> Анықтамалар мен хаттамалар
+                </button>
+                <button onclick="switchTab('students')" id="btn-students" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-user-graduate w-5"></i> Оқушы құжаттары
+                </button>
+                <button onclick="switchTab('events')" id="btn-events" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-calendar-days w-5"></i> Іс-шаралар тізімі
+                </button>
+                <button onclick="switchTab('plan')" id="btn-plan" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-clipboard-list w-5"></i> Тәрбие жұмыс жоспары
+                </button>
+                <button onclick="switchTab('teachers')" id="btn-teachers" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-chalkboard-user w-5"></i> Сынып жетекшілер
+                </button>
+                <button onclick="switchTab('period')" id="btn-period" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i> Есептік кезең
+                </button>
+            </aside>
+
+            <!-- Дисплей аймағы -->
+            <main class="flex-1 p-6 overflow-y-auto">
+                <div id="tabContent" class="max-w-6xl mx-auto space-y-6">
+                    <!-- Javascript арқылы толтырылады -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Құжат немесе жазба қосу модальды терезесі -->
+    <div id="actionModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <h3 id="modalTitle" class="text-xl font-bold text-slate-900">Жаңа құжат қосу</h3>
+            <div id="modalFormFields" class="space-y-4">
+                <!-- Динамикалық өрістер -->
+            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button onclick="closeModal()" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium transition">Болдырмау</button>
+                <button onclick="saveRecord()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition shadow-md">Сақтау</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserRole = null; 
+        let currentActiveTab = 'orders';
+        let activeModalType = '';
+
+        const dbData = {
+            orders: [
+                { id: 1, title: "№45 Бұйрық: Қауіпсіздік ережелерін сақтау туралы", date: "2026-02-10", type: "PDF", size: "2.4 MB" },
+                { id: 2, title: "№48 Бұйрық: Оқу жылындағы тәрбие жоспары", date: "2026-01-15", type: "WORD", size: "1.1 MB" }
+            ],
+            folder: [
+                { id: 1, grade: "5 'А' сыныбы", title: "Сынып отырыстарының хаттамалары", date: "2026-02-01", type: "EXCEL", size: "850 KB" },
+                { id: 2, grade: "8 'Б' сыныбы", title: "Оқушылардың әлеуметтік паспорты", date: "2026-01-20", type: "PDF", size: "3.2 MB" }
+            ],
+            parents: [
+                { id: 1, title: "Ата-аналар комитетінің жиналыс хаттамасы №1", date: "2026-02-05", type: "WORD", grade: "6 'А'" },
+                { id: 2, title: "Педагогикалық қолдау және кеңес беру материалдары", date: "2026-01-18", type: "PDF", grade: "Барлығы" }
+            ],
+            docs: [
+                { id: 1, title: "Әдістемелік нұсқаулықтар мен хаттамалар жинағы", date: "2026-02-02", type: "PDF" },
+                { id: 2, title: "Тәрбиешілер кеңесінің шешімдері", date: "2026-01-10", type: "WORD" }
+            ],
+            students: [
+                { id: 1, grade: "7 'Ә'", name: "Аманжолқызы Айғаным", birthDate: "2013-05-12", iin: "130512400123", socialStatus: "Тұрмысы төмен отбасы", schoolAccount: "Жоқ" },
+                { id: 2, grade: "9 'Б'", name: "Бейбітұлы Ернар", birthDate: "2011-11-20", iin: "111120300456", socialStatus: "Көпбалалы отбасы", schoolAccount: "Ішкі есепте тұрады" }
+            ],
+            events: [
+                { id: 1, title: "«Зорлық-зомбылыққа жол жоқ» акциясы", date: "2026-02-08", format: "Фото/Видео, ҚМЖ, КТП", details: "Ашық тәрбие сағаты өткізілді." },
+                { id: 2, title: "«Абай оқулары» байқауы", date: "2026-01-25", format: "Презентация, КТП", details: "Мектепшілік кезең." }
+            ],
+            plan: [
+                { id: 1, category: "Жылдық жоспар", title: "2025-2026 оқу жылына арналған тәрбие жұмысының кешенді жоспары", type: "PDF" },
+                { id: 2, category: "Қауіпсіздік ережесі", title: "Жолда жүру және өрт қауіпсіздігі ережелерінің жадынамасы", type: "WORD" },
+                { id: 3, category: "Психологпен бірлескен жұмыс", title: "Бейімделу кезеңіндегі оқушыларға психологиялық тренинг кестесі", type: "EXCEL" }
+            ],
+            teachers: [
+                { id: 1, name: "Сейдахметова Г.К.", grade: "5 'А'", code: "TCH-9921", status: "Белсенді" },
+                { id: 2, name: "Жұмабаев Б.Т.", grade: "10 'Б'", code: "TCH-4412", status: "Белсенді" }
+            ],
+            period: {
+                startDate: "2026-01-01",
+                endDate: "2026-06-01",
+                status: "Тексеру мерзімі ашық"
+            }
+        };
+
+        function loginAsAdmin() {
+            currentUserRole = 'admin';
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('userRoleIndicator').innerText = "Рөл: Администратор (Google арқылы кірді)";
+            renderTabContent();
+        }
+
+        function loginAsTeacher() {
+            const codeInput = document.getElementById('teacherCodeInput');
+            const code = codeInput ? codeInput.value.trim().toUpperCase() : "";
+            
+            if (!code) {
+                alert("Бір реттік кодты енгізіңіз!");
+                return;
+            }
+
+            // Мұғалімдер тізімінен кодты іздеу (немесе TCH- форматын қолдау)
+            const foundTeacher = dbData.teachers.find(t => t.code.toUpperCase() === code);
+
+            if (foundTeacher || code.startsWith("TCH-")) {
+                currentUserRole = 'teacher';
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                document.getElementById('userRoleIndicator').innerText = `Рөл: Сынып Жетекші (${foundTeacher ? foundTeacher.name : code})`;
+                renderTabContent();
+            } else {
+                alert("Қате код! Администратор берген дұрыс кодты енгізіңіз (Мысалы: TCH-9921 немесе TCH-4412).");
+            }
+        }
+
+        function logout() {
+            currentUserRole = null;
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('authModal').classList.remove('hidden');
+            const codeInput = document.getElementById('teacherCodeInput');
+            if (codeInput) codeInput.value = '';
+        }
+
+        function switchTab(tabKey) {
+            currentActiveTab = tabKey;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-50', 'text-indigo-700');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            const activeBtn = document.getElementById(`btn-${tabKey}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-indigo-50', 'text-indigo-700');
+                activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+            }
+            renderTabContent();
+        }
+
+        function renderTabContent() {
+            const container = document.getElementById('tabContent');
+            if (!container) return;
+            container.innerHTML = '';
+
+            switch(currentActiveTab) {
+                case 'orders':
+                    container.innerHTML = generateSectionHeader("Тәрбие бұйрықтары", "Мектептің тәрбие саласындағы барлық ресми бұйрықтары мен қаулылары", true) + generateOrdersTable();
+                    break;
+                case 'folder':
+                    container.innerHTML = generateSectionHeader("Сынып папкасы", "1-11 сынып комплектілері мен сынып папкаларының құжаттары", true) + generateFolderTable();
+                    break;
+                case 'parents':
+                    container.innerHTML = generateSectionHeader("Ата-аналармен жұмыс", "Жиналыстар, кеңестер және атқарылған жұмыс есептері", true) + generateParentsTable();
+                    break;
+                case 'docs':
+                    container.innerHTML = generateSectionHeader("Анықтамалар мен хаттамалар", "Әдістемелік материалдар мен отырыс хаттамалары", true) + generateDocsTable();
+                    break;
+                case 'students':
+                    container.innerHTML = generateSectionHeader("Оқушы құжаттары", "Оқушылардың жеке деректері, әлеуметтік жағдайы және мектеп есебі", true) + generateStudentsTable();
+                    break;
+                case 'events':
+                    container.innerHTML = generateSectionHeader("Іс-шаралар тізімі", "Өтілетін іс-шаралар, фото, видео, ҚМЖ және КТП материалдары", true) + generateEventsTable();
+                    break;
+                case 'plan':
+                    container.innerHTML = generateSectionHeader("Тәрбие жұмыс жоспары", "Жылдық жоспар, қауіпсіздік ережелері және психологпен бірлескен жұмыс", true) + generatePlanTable();
+                    break;
+                case 'teachers':
+                    container.innerHTML = generateSectionHeader("Сынып жетекшілер", "Сынып жетекшілер тізімі, логин-пароль және бір реттік кодтар", currentUserRole === 'admin') + generateTeachersTable();
+                    break;
+                case 'period':
+                    container.innerHTML = generateSectionHeader("Есептік кезең", "Тексеру мерзімін еркін таңдау және есептік кезеңді бақылау", false) + generatePeriodContent();
+                    break;
+            }
+        }
+
+        function generateSectionHeader(title, subtitle, showAddBtn) {
+            return `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">${title}</h2>
+                        <p class="text-sm text-slate-500 mt-1">${subtitle}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <input type="text" placeholder="Іздеу..." onkeyup="filterTable(this)" class="pl-9 pr-4 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        </div>
+                        ${showAddBtn ? `<button onclick="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition shadow-md flex items-center gap-2 whitespace-nowrap"><i class="fa-solid fa-plus"></i> Жаңа қосу</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateOrdersTable() {
+            let rows = dbData.orders.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-slate-900">${item.title}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.date}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg">${item.type}</span></td>
+                    <td class="px-6 py-4 text-slate-600">${item.size || '1.5 MB'}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="downloadItem('Бұйрық')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm"><i class="fa-solid fa-download"></i> Жүктеу</button>
+                        ${currentUserRole === 'admin' ? `<button onclick="deleteRecord('orders', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Құжат атауы</th><th>Күні</th><th>Форматы</th><th>Өлшемі</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generateFolderTable() {
+            let rows = dbData.folder.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-indigo-600">${item.grade}</td>
+                    <td class="px-6 py-4 text-slate-900">${item.title}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.date}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg">${item.type}</span></td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="downloadItem('Папка құжаты')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm"><i class="fa-solid fa-download"></i> Жүктеу</button>
+                        <button onclick="deleteRecord('folder', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Сыныбы</th><th>Құжат атауы</th><th>Күні</th><th>Форматы</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generateParentsTable() {
+            let rows = dbData.parents.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-slate-900">${item.title}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.grade}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.date}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-lg">${item.type}</span></td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="downloadItem('Ата-аналар құжаты')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm"><i class="fa-solid fa-download"></i> Жүктеу</button>
+                        <button onclick="deleteRecord('parents', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Жұмыс тақырыбы</th><th>Сыныбы</th><th>Күні</th><th>Форматы</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generateDocsTable() {
+            let rows = dbData.docs.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-slate-900">${item.title}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.date}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg">${item.type}</span></td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="downloadItem('Анықтама')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm"><i class="fa-solid fa-download"></i> Жүктеу</button>
+                        <button onclick="deleteRecord('docs', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Атауы / Хаттама</th><th>Күні</th><th>Форматы</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generateStudentsTable() {
+            let rows = dbData.students.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-indigo-600">${item.grade}</td>
+                    <td class="px-6 py-4 font-medium text-slate-900">${item.name}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.birthDate}</td>
+                    <td class="px-6 py-4 text-slate-600 font-mono">${item.iin}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.socialStatus}</td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 bg-rose-50 text-rose-700 text-xs font-semibold rounded-lg">${item.schoolAccount}</span></td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteRecord('students', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>СЫНЫБЫ</th><th>АТЫ-ЖӨНІ</th><th>ТУЫЛҒАН КҮНІ</th><th>ИИН</th><th>ӘЛЕУМЕТТІК ЖАҒДАЙЫ</th><th>МЕКЕП ЕСЕБІНДЕ</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generateEventsTable() {
+            let rows = dbData.events.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-slate-900">${item.title}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.date}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.format}</td>
+                    <td class="px-6 py-4 text-slate-600">${item.details}</td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="downloadItem('Іс-шара материалы')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm"><i class="fa-solid fa-download"></i> Жүктеу</button>
+                        <button onclick="deleteRecord('events', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Іс-шара атауы</th><th>Күні</th><th>Форматы (Видео, фото, ҚМЖ, КТП)</th><th>Сипаттамасы</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generatePlanTable() {
+            let rows = dbData.plan.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-semibold text-indigo-600">${item.category}</td>
+                    <td class="px-6 py-4 text-slate-900">${item.title}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-cyan-50 text-cyan-700 text-xs font-semibold rounded-lg">${item.type}</span></td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="downloadItem('Жоспар құжаты')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm"><i class="fa-solid fa-download"></i> Жүктеу</button>
+                        <button onclick="deleteRecord('plan', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Бөлім санаттары</th><th>Құжат атауы</th><th>Түрі</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generateTeachersTable() {
+            let rows = dbData.teachers.map(item => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4 font-medium text-slate-900">${item.name}</td>
+                    <td class="px-6 py-4 text-indigo-600 font-semibold">${item.grade}</td>
+                    <td class="px-6 py-4 font-mono text-slate-600">${item.code}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg">${item.status}</span></td>
+                    <td class="px-6 py-4 text-right">
+                        ${currentUserRole === 'admin' ? `<button onclick="deleteRecord('teachers', ${item.id})" class="text-red-500 hover:text-red-700 font-medium text-sm"><i class="fa-solid fa-trash"></i> Жою</button>` : '<span class="text-xs text-slate-400">Тек админге</span>'}
+                    </td>
+                </tr>
+            `).join('');
+            return tableWrapper(`<tr><th>Мұғалім аты-жөні</th><th>Сыныбы</th><th>Бір реттік кіру коды</th><th>Мәртебесі</th><th class="text-right">Әрекеттер</th></tr>`, rows);
+        }
+
+        function generatePeriodContent() {
+            return `
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-2xl space-y-6">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-indigo-100 text-indigo-600 p-3.5 rounded-2xl">
+                            <i class="fa-solid fa-calendar-check text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">Есептік кезең және Тексеру мерзімі</h3>
+                            <p class="text-sm text-slate-500">Сынып жетекшілерінің есеп тапсыру мерзімін еркін таңдаңыз және бекітіңіз.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Басталу күні</label>
+                            <input type="date" id="periodStart" value="${dbData.period.startDate}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Аяқталу күні</label>
+                            <input type="date" id="periodEnd" value="${dbData.period.endDate}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Мәртебесі</label>
+                        <select id="periodStatus" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="Тексеру мерзімі ашық">Тексеру мерзімі ашық</option>
+                            <option value="Тексеру мерзімі аяқталды">Тексеру мерзімі аяқталды</option>
+                        </select>
+                    </div>
+                    ${currentUserRole === 'admin' ? `<button onclick="savePeriod()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl text-sm transition shadow-md">Кезеңді сақтау және жаңарту</button>` : '<p class="text-xs text-amber-600 bg-amber-50 p-3 rounded-xl">Сынып жетекшілер бұл бөлімді тек көре алады.</p>'}
+                </div>
+            `;
+        }
+
+        function tableWrapper(headers, rows) {
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead><tr class="bg-slate-50 text-slate-600 border-b border-slate-200">${headers}</tr></thead>
+                            <tbody class="divide-y divide-slate-100">${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openAddModal() {
+            if (currentUserRole !== 'admin' && currentActiveTab === 'teachers') {
+                alert("Сынып жетекшілерді тек администратор ғана қоса алады!");
+                return;
+            }
+            activeModalType = currentActiveTab;
+            document.getElementById('modalTitle').innerText = "Жаңа құжат немесе жазба қосу";
+            const fieldsContainer = document.getElementById('modalFormFields');
+            
+            if (activeModalType === 'students') {
+                fieldsContainer.innerHTML = `
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Сыныбы</label><input type="text" id="m_grade" placeholder="Мысалы: 7 'А'" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Аты-жөні</label><input type="text" id="m_name" placeholder="Оқушының Аты-жөні" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Туылған күні</label><input type="date" id="m_birth" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">ИИН</label><input type="text" id="m_iin" placeholder="12 цифрлы ИИН" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Әлеуметтік жағдайы</label><input type="text" id="m_social" placeholder="Мәртебесі" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Мектеп есебінде</label><input type="text" id="m_account" placeholder="Жоқ / Есепте тұрады" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                `;
+            } else if (activeModalType === 'teachers') {
+                fieldsContainer.innerHTML = `
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Мұғалім аты-жөні</label><input type="text" id="t_name" placeholder="Т.А.Ә." class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Сыныбы</label><input type="text" id="t_grade" placeholder="Жетекшілік ететін сыныбы" class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Бір реттік кіру коды</label><input type="text" id="t_code" placeholder="TCH-XXXX" class="w-full px-3 py-2 border rounded-xl text-sm font-mono uppercase"></div>
+                `;
+            } else {
+                fieldsContainer.innerHTML = `
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Құжат атауы / Тақырыбы</label><input type="text" id="g_title" placeholder="Атауын жазыңыз..." class="w-full px-3 py-2 border rounded-xl text-sm"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Файлды жүктеу (PDF, Word, Excel, PNG, Video)</label><input type="file" id="g_file" class="w-full px-3 py-2 border rounded-xl text-sm bg-slate-50"></div>
+                `;
+            }
+
+            document.getElementById('actionModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+        }
+
+        function saveRecord() {
+            if (activeModalType === 'students') {
+                dbData.students.push({
+                    id: Date.now(),
+                    grade: document.getElementById('m_grade').value || "1 'А'",
+                    name: document.getElementById('m_name').value || "Аты жоқ",
+                    birthDate: document.getElementById('m_birth').value || "2015-01-01",
+                    iin: document.getElementById('m_iin').value || "000000000000",
+                    socialStatus: document.getElementById('m_social').value || "Жалпы",
+                    schoolAccount: document.getElementById('m_account').value || "Жоқ"
+                });
+            } else if (activeModalType === 'teachers') {
+                const newCode = document.getElementById('t_code').value || "TCH-0000";
+                dbData.teachers.push({
+                    id: Date.now(),
+                    name: document.getElementById('t_name').value || "Мұғалім",
+                    grade: document.getElementById('t_grade').value || "1 'А'",
+                    code: newCode.toUpperCase(),
+                    status: "Белсенді"
+                });
+            } else {
+                const title = document.getElementById('g_title').value || "Жаңа құжат";
+                if(dbData[activeModalType]) {
+                    dbData[activeModalType].push({
+                        id: Date.now(),
+                        title: title,
+                        date: new Date().toISOString().split('T')[0],
+                        type: "PDF",
+                        size: "1.5 MB"
+                    });
+                }
+            }
+            closeModal();
+            renderTabContent();
+        }
+
+        function deleteRecord(category, id) {
+            if (currentUserRole !== 'admin' && category === 'teachers') {
+                alert("Сынып жетекшілерді тек администратор ғана жоя алады!");
+                return;
+            }
+            dbData[category] = dbData[category].filter(item => item.id !== id);
+            renderTabContent();
+        }
+
+        function downloadItem(name) {
+            alert(name + " сәтті жүктелді!");
+        }
+
+        function savePeriod() {
+            dbData.period.startDate = document.getElementById('periodStart').value;
+            dbData.period.endDate = document.getElementById('periodEnd').value;
+            dbData.period.status = document.getElementById('periodStatus').value;
+            alert("Есептік кезең мен тексеру мерзімі сәтті сақталды!");
+        }
+
+        function filterTable(input) {
+            const filter = input.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
